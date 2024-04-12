@@ -23,8 +23,8 @@ jobs:
         - { name: static, flags: -DBUILD_SHARED_LIBS=FALSE -DCMAKE_BUILD_TYPE=Release }
 
     steps:
-    - name: Install Linux Dependencies
-      run: sudo apt-get update && sudo apt-get install libxrandr-dev libxcursor-dev libudev-dev libopenal-dev libflac-dev libvorbis-dev libgl1-mesa-dev libegl1-mesa-dev
+    # - name: Install Linux Dependencies
+    #   run: sudo apt-get update && sudo apt-get install libxrandr-dev libxcursor-dev libudev-dev libopenal-dev libflac-dev libvorbis-dev libgl1-mesa-dev libegl1-mesa-dev
 
     - name: Checkout
       uses: actions/checkout@v3
@@ -37,6 +37,9 @@ jobs:
 
     - name: Build ${{matrix.platform.bin}} executable
       run: cmake --build build --config Release
+
+    - name: Run ${{matrix.platform.bin}} executable
+      run: ${{matrix.platform.bin}}
 
     - name: Compress ${{matrix.platform.bin}} executable
       run: ${{matrix.platform.zipper}} ${{matrix.platform.zip}} ${{matrix.platform.bin}}
@@ -72,15 +75,18 @@ jobs:
     - name: Checkout Repository
       uses: actions/checkout@v3
 
-    - name: Install Linux Dependencies
-      if: runner.os == 'Linux'
-      run: sudo apt-get update && sudo apt-get install libxrandr-dev libxcursor-dev libudev-dev libopenal-dev libflac-dev libvorbis-dev libgl1-mesa-dev libegl1-mesa-dev
+    # - name: Install Linux Dependencies
+    #   if: runner.os == 'Linux'
+    #   run: sudo apt-get update && sudo apt-get install libxrandr-dev libxcursor-dev libudev-dev libopenal-dev libflac-dev libvorbis-dev libgl1-mesa-dev libegl1-mesa-dev
 
     - name: Configure project
       run: cmake -S src -B build -DCMAKE_INSTALL_PREFIX=install ${{matrix.platform.flags}} ${{matrix.config.flags}}
 
     - name: Build ${{matrix.platform.bin}} executable
       run: cmake --build build --config Release
+
+    - name: Run ${{matrix.platform.bin}} executable
+      run: ${{matrix.platform.bin}}
 
     - name: Compress ${{matrix.platform.bin}} executable
       run: ${{matrix.platform.zipper}} ${{matrix.platform.zip}} ${{matrix.platform.bin}}
