@@ -19,9 +19,19 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
   )
 elseif(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
   message("Operating System Type: APPLE")
-  FetchContent_Declare(Torch
-    URL https://download.pytorch.org/libtorch/cpu/libtorch-macos-arm64-2.2.2.zip
-  )
+  if(${CMAKE_HOST_SYSTEM_PROCESSOR} MATCHES "x86_64")
+      message(STATUS "x86_64 architecture detected")
+      FetchContent_Declare(Torch
+        URL https://download.pytorch.org/libtorch/cpu/libtorch-macos-x86_64-2.2.2.zip
+      )
+  elseif(${CMAKE_HOST_SYSTEM_PROCESSOR} MATCHES "arm64")
+      message(STATUS "arm64 architecture detected")
+      FetchContent_Declare(Torch
+        URL https://download.pytorch.org/libtorch/cpu/libtorch-macos-arm64-2.2.2.zip
+      )
+  else()
+      message(FATAL_ERROR "Other architecture detected")
+  endif()
 elseif(CMAKE_SYSTEM_NAME STREQUAL "Windows")
   message("Operating System Type: WINDOWS")
   FetchContent_Declare(Torch
