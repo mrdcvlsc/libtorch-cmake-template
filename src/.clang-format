@@ -1,0 +1,40 @@
+---
+BasedOnStyle: Microsoft
+IndentWidth: 4
+
+Language: Cpp
+
+UseTab: Never
+AlignConsecutiveDeclarations: true
+ContinuationIndentWidth: 2
+
+# # LINES
+AllowShortEnumsOnASingleLine: true
+AlwaysBreakBeforeMultilineStrings: true
+AlwaysBreakTemplateDeclarations: Yes
+EmptyLineAfterAccessModifier: Always
+
+# INDENTATIONS
+AlignAfterOpenBracket: BlockIndent
+NamespaceIndentation: All
+IndentCaseLabels: true
+IndentPPDirectives: BeforeHash
+# IndentAccessModifiers: true
+AccessModifierOffset: 0
+
+# SPACES
+FixNamespaceComments: true
+SpaceBeforeRangeBasedForLoopColon: false
+SpaceAfterCStyleCast: true
+
+SortIncludes: false
+
+# # CONSTRUCTORS
+BreakConstructorInitializers: AfterColon
+ConstructorInitializerAllOnOneLineOrOnePerLine: true
+AllowAllConstructorInitializersOnNextLine: false
+
+# BRACE WRAPPINGS
+BraceWrapping:
+    AfterControlStatement: Never
+    BeforeElse: false
