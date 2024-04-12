@@ -1,5 +1,3 @@
-# https://github.com/SFML/cmake-sfml-project/blob/master/CMakeLists.txt
-
 cmake_minimum_required(VERSION 3.18)
 project(ltct LANGUAGES CXX)
 
@@ -64,9 +62,9 @@ set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 17)
 
 if (MSVC)
   file(GLOB TORCH_DLLS "${TORCH_INSTALL_PREFIX}/lib/*.dll")
-  add_custom_command(TARGET example-app
+  add_custom_command(TARGET ${PROJECT_NAME}
                      POST_BUILD
                      COMMAND ${CMAKE_COMMAND} -E copy_if_different
                      ${TORCH_DLLS}
-                     $<TARGET_FILE_DIR:example-app>)
+                     $<TARGET_FILE_DIR:${PROJECT_NAME}>)
 endif (MSVC)
