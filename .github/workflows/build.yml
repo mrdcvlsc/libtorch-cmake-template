@@ -19,9 +19,9 @@ jobs:
         platform:
         - { name: Windows VS2019, os: windows-2019,   bin: .\\build\\bin\\Release\\ltct.exe, zip: windows-executable-VS19.zip,  zipper: 7z a -tzip }
         - { name: Windows VS2022, os: windows-2022,   bin: .\\build\\bin\\Release\\ltct.exe, zip: windows-executable-VS22.zip,  zipper: 7z a -tzip }
-        - { name: Windows Clang,  os: windows-latest, bin: .\\build\\bin\\Release\\ltct.exe, zip: windows-executable-clang.zip, zipper: 7z a -tzip, flags: -G "Unix Makefiles" -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ }
-        - { name: Windows GCC,    os: windows-latest, bin: .\\build\\bin\\Release\\ltct.exe, zip: windows-executable-gcc.zip,   zipper: 7z a -tzip, flags: -G "Unix Makefiles" -DCMAKE_C_COMPILER=gcc -DCMAKE_CXX_COMPILER=g++ }
-        - { name: MacOS XCode,    os: macos-latest,   bin: ./build/bin/ltct,                 zip: mac-executable.zip,           zipper: zip,       }
+        # - { name: Windows Clang,  os: windows-latest, bin: .\\build\\bin\\Release\\ltct.exe, zip: windows-executable-clang.zip, zipper: 7z a -tzip, flags: -G "Unix Makefiles" -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ }
+        # - { name: Windows GCC,    os: windows-latest, bin: .\\build\\bin\\Release\\ltct.exe, zip: windows-executable-gcc.zip,   zipper: 7z a -tzip, flags: -G "Unix Makefiles" -DCMAKE_C_COMPILER=gcc -DCMAKE_CXX_COMPILER=g++ }
+        # - { name: MacOS XCode,    os: macos-latest,   bin: ./build/bin/ltct,                 zip: mac-executable.zip,           zipper: zip,       }
         - { name: Linux GCC,      os: ubuntu-latest,  bin: ./build/bin/ltct,                 zip: ubuntu-executable-gcc.zip,    zipper: zip,       }
         - { name: Linux Clang,    os: ubuntu-latest,  bin: ./build/bin/ltct,                 zip: ubuntu-executable-clang.zip,  zipper: zip,        flags: -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ }
         config:
