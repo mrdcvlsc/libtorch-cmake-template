@@ -60,30 +60,32 @@ jobs:
       fail-fast: false
       matrix:
         platform:
-        - { name: Windows VS2019, os: windows-2019,   bin: .\\build\\bin\\Release\\ltct.exe, zip: windows-executable-VS19.zip,  zipper: 7z a -tzip, flags: -DBUILD_SHARED_LIBS=FALSE -DCMAKE_BUILD_TYPE=Release }
-        - { name: Windows VS2022, os: windows-2022,   bin: .\\build\\bin\\Release\\ltct.exe, zip: windows-executable-VS22.zip,  zipper: 7z a -tzip, flags: -DBUILD_SHARED_LIBS=FALSE -DCMAKE_BUILD_TYPE=Release }
-        - { name: Windows Clang,  os: windows-latest, bin: .\\build\\bin\\Release\\ltct.exe, zip: windows-executable-clang.zip, zipper: 7z a -tzip, flags: -DBUILD_SHARED_LIBS=FALSE -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ }
-        - { name: Windows GCC,    os: windows-latest, bin: .\\build\\bin\\Release\\ltct.exe, zip: windows-executable-gcc.zip,   zipper: 7z a -tzip, flags: -DBUILD_SHARED_LIBS=FALSE -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER=gcc -DCMAKE_CXX_COMPILER=g++ }
-        - { name: MacOS XCode,    os: macos-latest,   bin: ./build/bin/ltct,                 zip: mac-executable.zip,           zipper: zip,        flags: -DBUILD_SHARED_LIBS=FALSE -DCMAKE_BUILD_TYPE=Release }
-        - { name: Linux GCC,      os: ubuntu-latest,  bin: ./build/bin/ltct,                 zip: ubuntu-executable-gcc.zip,    zipper: zip,        flags: -DBUILD_SHARED_LIBS=FALSE -DCMAKE_BUILD_TYPE=Release }
+        - { name: Windows VS2019, os: windows-2019,   bin: .\\build\\bin\\Release\\ltct.exe, zip: windows-executable-VS19.zip,  zipper: 7z a -tzip }
+        - { name: Windows VS2022, os: windows-2022,   bin: .\\build\\bin\\Release\\ltct.exe, zip: windows-executable-VS22.zip,  zipper: 7z a -tzip }
+        - { name: Windows Clang,  os: windows-latest, bin: .\\build\\bin\\Release\\ltct.exe, zip: windows-executable-clang.zip, zipper: 7z a -tzip, flags: -G "Unix Makefiles" -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ }
+        - { name: Windows GCC,    os: windows-latest, bin: .\\build\\bin\\Release\\ltct.exe, zip: windows-executable-gcc.zip,   zipper: 7z a -tzip, flags: -G "Unix Makefiles" -DCMAKE_C_COMPILER=gcc -DCMAKE_CXX_COMPILER=g++ }
+        - { name: MacOS XCode,    os: macos-latest,   bin: ./build/bin/ltct,                 zip: mac-executable.zip,           zipper: zip,       }
+        - { name: Linux GCC,      os: ubuntu-latest,  bin: ./build/bin/ltct,                 zip: ubuntu-executable-gcc.zip,    zipper: zip,       }
+        - { name: Linux Clang,    os: ubuntu-latest,  bin: ./build/bin/ltct,                 zip: ubuntu-executable-clang.zip,  zipper: zip,        flags: -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ }
         config:
-        - { name: static, flags: -DBUILD_SHARED_LIBS=FALSE -DCMAKE_BUILD_TYPE=Release }
-        # - { name: shared, flags: -DBUILD_SHARED_LIBS=TRUE -DCMAKE_BUILD_TYPE=Release }
+        - { name: static, flags: -DBUILD_SHARED_LIBS=FALSE }
+        # - { name: shared, flags: -DBUILD_SHARED_LIBS=TRUE }
+        build:
+        - { name: Release,        flags: -DCMAKE_BUILD_TYPE=Release }
+        # - { name: Debug,          flags: -DCMAKE_BUILD_TYPE=Debug }
+        # - { name: RelWithDebInfo, flags: -DCMAKE_BUILD_TYPE=RelWithDebInfo }
+        # - { name: MinSizeRel,     flags: -DCMAKE_BUILD_TYPE=MinSizeRel }
 
     steps:
 
     - name: Checkout Repository
       uses: actions/checkout@v3
 
-    # - name: Install Linux Dependencies
-    #   if: runner.os == 'Linux'
-    #   run: sudo apt-get update && sudo apt-get install libxrandr-dev libxcursor-dev libudev-dev libopenal-dev libflac-dev libvorbis-dev libgl1-mesa-dev libegl1-mesa-dev
-
     - name: Configure project
-      run: cmake -S src -B build -DCMAKE_INSTALL_PREFIX=install ${{matrix.platform.flags}} ${{matrix.config.flags}}
+      run: cmake -S src -B build -DCMAKE_INSTALL_PREFIX=install ${{matrix.platform.flags}} ${{matrix.config.flags}} ${{matrix.build.flags}}
 
     - name: Build ${{matrix.platform.bin}} executable
-      run: cmake --build build --config Release
+      run: cmake --build build --config ${{matrix.build.name}}
 
     - name: Run ${{matrix.platform.bin}} executable
       run: ${{matrix.platform.bin}}

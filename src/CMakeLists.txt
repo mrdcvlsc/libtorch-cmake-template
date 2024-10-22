@@ -1,6 +1,16 @@
 cmake_minimum_required(VERSION 3.18)
 project(ltct LANGUAGES CXX)
 
+if(WIN32)
+    # disable windows asan for now since I don't know how to make it work
+    # set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /fsanitize=address")
+    # set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /fsanitize=address")
+else()
+    # asan seems to be broken in my machine for some reason - segfaulting in some cases even there is no errors
+    # set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fsanitize=address")
+    # set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address")
+endif()
+
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
 include(FetchContent)
@@ -38,7 +48,7 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL "Windows")
     URL https://download.pytorch.org/libtorch/cpu/libtorch-win-shared-with-deps-2.2.2%2Bcpu.zip
   )
 else()
-  message("Operating System Type: Unkown")
+  message("Operating System Type: Unknown")
   message(FATAL_ERROR "Cannot be supported")
 endif()
 message("--------------------------")
@@ -65,8 +75,10 @@ cmake_print_variables(CMAKE_CXX_FLAGS)
 message("=====================================================")
 
 file(GLOB SOURCES "*.cpp")
+cmake_print_variables(SOURCES)
+# add_executable(${PROJECT_NAME} main.cpp ${SOURCES})
 
-add_executable(${PROJECT_NAME} main.cpp ${SOURCES})
+add_executable(${PROJECT_NAME} main.cpp)
 target_link_libraries(${PROJECT_NAME} "${TORCH_LIBRARIES}")
 set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 17)
 
