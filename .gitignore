@@ -1,4 +1,5 @@
 data
+*.pt
 
 src/tmp
 build

@@ -1,38 +1,7 @@
 #include <iostream>
 #include <memory>
 #include <torch/torch.h>
-
-struct XorNet: torch::nn::Module {
-  XorNet() {
-    linear_stack = register_module("linear_stack",
-      torch::nn::Sequential(
-        torch::nn::Linear(torch::nn::LinearOptions(2, 2).bias(true)),
-        torch::nn::Sigmoid(),
-        torch::nn::Linear(torch::nn::LinearOptions(2, 1).bias(true)),
-        torch::nn::Sigmoid()
-      )
-    );
-
-    initialize_parameters();
-  }
-
-  torch::Tensor forward(torch::Tensor x) {
-    auto x1 = linear_stack->forward(x);
-    return x1;
-  }
-
-  void initialize_parameters() {
-    torch::NoGradGuard noGrad;
-    for (auto& module : linear_stack->children()) {
-      if (auto* linear = module->as<torch::nn::Linear>()) {
-        torch::nn::init::xavier_normal_(linear->weight);
-        torch::nn::init::constant_(linear->bias, 1.f);
-      }
-    }
-  }
-
-  torch::nn::Sequential linear_stack{nullptr};
-};
+#include "model.hpp"
 
 int main() {
   torch::Device device(torch::cuda::is_available() ? torch::kCUDA : torch::kCPU);

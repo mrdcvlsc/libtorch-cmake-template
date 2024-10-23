@@ -74,28 +74,57 @@ cmake_print_variables(TORCH_INCLUDE_DIRS)
 cmake_print_variables(CMAKE_CXX_FLAGS)
 message("=====================================================")
 
-################# compile 1 executable : start ################# 
+# ################# xor network : start ################# 
 
 # copy paste this block or use a foreach loop to compile multiple executable
 
-set(OUT_EXE_NAME ${PROJECT_NAME})
-add_executable(${OUT_EXE_NAME} main.cpp)
+# set the name of the output executable
+set(OUT_EXE1 xor_net)
+
+add_executable(${OUT_EXE1} "XOR/train.cpp;XOR/model.cpp")
 
 # to add executable with dependencies
 # file(GLOB SOURCES "*.cpp")
 # cmake_print_variables(SOURCES)
-# add_executable(${OUT_EXE_NAME} main.cpp ${SOURCES})
+# add_executable(${OUT_EXE1} main.cpp ${SOURCES})
 
-target_link_libraries(${OUT_EXE_NAME} "${TORCH_LIBRARIES}")
-set_property(TARGET ${OUT_EXE_NAME} PROPERTY CXX_STANDARD 17)
+target_link_libraries(${OUT_EXE1} "${TORCH_LIBRARIES}")
+set_property(TARGET ${OUT_EXE1} PROPERTY CXX_STANDARD 17)
 
 if (MSVC)
   file(GLOB TORCH_DLLS "${TORCH_INSTALL_PREFIX}/lib/*.dll")
-  add_custom_command(TARGET ${OUT_EXE_NAME}
+  add_custom_command(TARGET ${OUT_EXE1}
                      POST_BUILD
                      COMMAND ${CMAKE_COMMAND} -E copy_if_different
                      ${TORCH_DLLS}
-                     $<TARGET_FILE_DIR:${OUT_EXE_NAME}>)
+                     $<TARGET_FILE_DIR:${OUT_EXE1}>)
 endif (MSVC)
 
-################# compile 1 executable : end ################# 
+# ################# xor network : end ################# 
+
+################# multi-class classification : start ################# 
+
+# copy paste this block or use a foreach loop to compile multiple executable
+
+# set the name of the output executable
+set(OUT_EXE2 mcc_cnn)
+add_executable(${OUT_EXE2} "MultiClassClassification/train.cpp;MultiClassClassification/model.cpp")
+
+# to add executable with dependencies
+# file(GLOB SOURCES "*.cpp")
+# cmake_print_variables(SOURCES)
+# add_executable(${OUT_EXE2} main.cpp ${SOURCES})
+
+target_link_libraries(${OUT_EXE2} "${TORCH_LIBRARIES}")
+set_property(TARGET ${OUT_EXE2} PROPERTY CXX_STANDARD 17)
+
+if (MSVC)
+  file(GLOB TORCH_DLLS "${TORCH_INSTALL_PREFIX}/lib/*.dll")
+  add_custom_command(TARGET ${OUT_EXE2}
+                     POST_BUILD
+                     COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                     ${TORCH_DLLS}
+                     $<TARGET_FILE_DIR:${OUT_EXE2}>)
+endif (MSVC)
+
+################# multi-class classification : end ################# 
