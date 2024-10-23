@@ -1,0 +1,44 @@
+name: test
+
+on: [push, pull_request]
+
+jobs:
+  build:
+    permissions: write-all
+
+    name: ${{ matrix.platform.name }} ${{ matrix.config.name }}
+    runs-on: ${{ matrix.platform.os }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        platform:
+        - { name: Windows VS2019, os: windows-2019,   bin1: .\\build\\bin\\Release\\xor_net.exe, zip: windows-executable-VS19.zip,  zipper: 7z a -tzip }
+        - { name: Windows VS2022, os: windows-2022,   bin1: .\\build\\bin\\Release\\xor_net.exe, zip: windows-executable-VS22.zip,  zipper: 7z a -tzip }
+        # - { name: Windows Clang,  os: windows-latest, bin1: .\\build\\bin\\Release\\xor_net.exe, zip: windows-executable-clang.zip, zipper: 7z a -tzip, flags: -G "Unix Makefiles" -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ }
+        # - { name: Windows GCC,    os: windows-latest, bin1: .\\build\\bin\\Release\\xor_net.exe, zip: windows-executable-gcc.zip,   zipper: 7z a -tzip, flags: -G "Unix Makefiles" -DCMAKE_C_COMPILER=gcc -DCMAKE_CXX_COMPILER=g++ }
+        # - { name: MacOS XCode,    os: macos-latest,   bin1: ./build/bin/xor_net,                 zip: mac-executable.zip,           zipper: zip,       }
+        - { name: Linux GCC,      os: ubuntu-latest,  bin1: ./build/bin/xor_net,                 zip: ubuntu-executable-gcc.zip,    zipper: zip,       }
+        - { name: Linux Clang,    os: ubuntu-latest,  bin1: ./build/bin/xor_net,                 zip: ubuntu-executable-clang.zip,  zipper: zip,        flags: -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ }
+        config:
+        - { name: static, flags: -DBUILD_SHARED_LIBS=FALSE }
+        # - { name: shared, flags: -DBUILD_SHARED_LIBS=TRUE }
+        build:
+        - { name: Release,        flags: -DCMAKE_BUILD_TYPE=Release }
+        # - { name: Debug,          flags: -DCMAKE_BUILD_TYPE=Debug }
+        # - { name: RelWithDebInfo, flags: -DCMAKE_BUILD_TYPE=RelWithDebInfo }
+        # - { name: MinSizeRel,     flags: -DCMAKE_BUILD_TYPE=MinSizeRel }
+
+    steps:
+
+    - name: Checkout Repository
+      uses: actions/checkout@v3
+
+    - name: Configure project
+      run: cmake -S src -B build -DCMAKE_INSTALL_PREFIX=install ${{matrix.platform.flags}} ${{matrix.config.flags}} ${{matrix.build.flags}}
+
+    - name: Build ${{matrix.platform.bin1}} executable
+      run: cmake --build build --config ${{matrix.build.name}}
+
+    - name: Run ${{matrix.platform.bin1}} executable
+      run: ${{matrix.platform.bin1}}
