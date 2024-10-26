@@ -4,12 +4,19 @@ from pathlib import Path
 from torch.utils.tensorboard import SummaryWriter
 
 # Function to parse binary files and extract stored data
-def parse_binary_file(filepath):
+def parse_add_scalar_binary_file(filepath):
     data_entries = []
 
     with open(filepath, "rb") as file:
-        # Read the first 30 bytes (for the tag, if needed)
-        tag = file.read(30).decode("utf-8").rstrip("\x00")
+        # skip the byte indicator
+        _ = file.read(1)
+
+        # get the tag length
+        tag_len = file.read(4)
+        tag_len, = struct.unpack("<i", tag_len)
+
+        # Read the tag string
+        tag = file.read(tag_len).decode("utf-8")
 
         # Continue reading entries, each entry is 20 bytes
         while True:
@@ -36,15 +43,30 @@ def write_to_tensorboard(run_dir, log_dir="runs"):
     if os.path.exists(run_folder_name):
         print(f'Skipping {run_folder_name}, tensorboard data is already generated')
         return
+    else:
+        print(f'Creating {run_folder_name}...')
 
     writer = SummaryWriter(f"{log_dir}/training_{timestamp}")
 
-    for filepath in Path(run_dir).glob("*.bin"):
-        tag, data_entries = parse_binary_file(filepath)
-        for scalar_value, global_step, timestamp in data_entries:
-            # Log each scalar value with the global_step and timestamp
-            writer.add_scalar(tag.replace('0', ''), scalar_value, global_step, walltime=timestamp)
-    
+    for filepath in Path(run_dir).glob("*.scalar"):
+        print(f'Reading {filepath}...')
+
+        # get the byte indicator
+        with open(filepath, "rb") as file:
+            byte_indicator = file.read(1).decode("utf-8")
+
+        print(f"Byte Indicator: {byte_indicator} : {filepath}\n")
+            
+        if byte_indicator == "s":
+            print(f"Extracting {filepath} as addScalar\n")
+
+            tag, data_entries = parse_add_scalar_binary_file(filepath)
+            for scalar_value, global_step, timestamp in data_entries:
+                # Log each scalar value with the global_step and timestamp
+                writer.add_scalar(tag.replace('0', ''), scalar_value, global_step, walltime=timestamp)
+        else:
+            print("Invalid Byte Indicator For SummaryWriter Binary Saved Data")
+
     writer.close()
 
 if __name__ == "__main__":

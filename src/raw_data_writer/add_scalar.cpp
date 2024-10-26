@@ -1,16 +1,11 @@
 #include "raw_data_writer.hpp"
 
 bool RawDataWriter::addScalar(const std::string& tag, double scalar_value, int global_step) {
+
     auto now = std::chrono::system_clock::now();
 
-    // Check if `tag` string is valid length
-    if (tag.size() < 1 || tag.size() > 30) {
-        std::cerr << "Error: Tag must be between 1 and 30 characters.\n";
-        return false;
-    }
-
     // Ensure valid filename for tag and check/create binary file
-    std::filesystem::path file_path = std::filesystem::path(directory) / (tag + ".bin");
+    std::filesystem::path file_path = std::filesystem::path(directory) / (tag + ".scalar");
     bool is_new_file = !std::filesystem::exists(file_path);
 
     // Open file for read/write in binary mode, creating if necessary
@@ -20,11 +15,17 @@ bool RawDataWriter::addScalar(const std::string& tag, double scalar_value, int g
         return false;
     }
 
-    // If file is new or empty, write the tag string in the first 30 bytes
+    // If file is new or empty
     if (is_new_file || std::filesystem::file_size(file_path) == 0) {
         file.seekp(0);
+
+        // write the byte indicator that the file is for addScalar
+        file.write("s", 1);
+
+        // write the tag string in the binary file
+        int tag_len = tag.size();
+        file.write(reinterpret_cast<const char*>(&tag_len), sizeof(tag_len));
         file.write(tag.c_str(), tag.size());
-        file.write(std::string(30, '0').c_str(), 30 - tag.size());
     }
 
     // Append scalar_value and global_step to file
