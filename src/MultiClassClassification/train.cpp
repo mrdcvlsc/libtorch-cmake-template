@@ -146,61 +146,62 @@ int main() {
 
         float training_amassed_loss = 0.f;
         float training_correct_pred = 0.f;
-        float training_samples_done = 0.f;
 
         int training_mini_batch_idx = 0;
+        int training_overall_samples_done = 0;
+        int training_log_samples_done = 0;
         int training_log_counts = 0;
 
-        for (torch::data::Example<>& training_batch : *training_dataloader) {
+        for (torch::data::Example<>& training_mini_batch : *training_dataloader) {
             
             model->train();
 
-            training_batch.data = training_batch.data.to(device);
-            training_batch.target = training_batch.target.to(device);
+            training_mini_batch.data = training_mini_batch.data.to(device);
+            training_mini_batch.target = training_mini_batch.target.to(device);
 
             optimizer.zero_grad();
 
             // batch.data | Shape: [Batch x Channel x 28 x 28]
-            auto training_batch_output = model->forward(training_batch.data);
+            auto training_mini_batch_output = model->forward(training_mini_batch.data);
 
             // output       | Shape: [Batch, 10]
             // batch.target | Shape: [Batch]
             // BinaryCrossEntropyLoss
-            auto training_batch_loss = loss_function(training_batch_output, training_batch.target);
-            training_batch_loss.backward();
+            auto training_mini_batch_loss = loss_function(training_mini_batch_output, training_mini_batch.target);
+            training_mini_batch_loss.backward();
             optimizer.step();
 
 #if defined(VALIDATION_ENABLED)
 
             // accumulate training data every mini batches
 
-            training_amassed_loss += training_batch_loss.item<float>();
-            training_correct_pred += training_batch_output.argmax(1).eq(training_batch.target).sum().item<int>();
-            training_samples_done += training_batch.data.size(0);
+            training_amassed_loss += training_mini_batch_loss.item<float>();
+            training_correct_pred += training_mini_batch_output.argmax(1).eq(training_mini_batch.target).sum().item<int>();
+            training_overall_samples_done += training_mini_batch.data.size(0);
+            training_log_samples_done += training_mini_batch.data.size(0);
             training_log_counts++;
 
             // validate the network after a certain mini batch number
 
-            if (training_mini_batch_idx % hyperparams::mini_batch_log_interval == 0) {
+            if (!((training_mini_batch_idx + 1) % hyperparams::mini_batch_log_interval) || training_mini_batch_idx == 0) {
 
                 // calculate running averages of training data
 
                 auto training_running_loss = training_amassed_loss / static_cast<float>(training_log_counts);
-                auto training_running_accuracy = training_correct_pred / training_samples_done;
-                training_log_counts = 0;
+                auto training_running_accuracy = training_correct_pred / training_log_samples_done;
 
                 writer.addScalar("Training Loss", training_running_loss, epoch * total_training_batches + training_mini_batch_idx);
                 writer.addScalar("Training Accuracy", training_running_accuracy, epoch * total_training_batches + training_mini_batch_idx);
 
                 std::printf(
                     "Training: Batch [%d/%d] | Epoch : %d/%d | Accuracy: %.2f%% | Loss: %.7f | Dataset: [%5d/%5d]\n",
-                    training_mini_batch_idx,
+                    training_mini_batch_idx + 1,
                     total_training_batches,
                     epoch + 1,
                     hyperparams::training_epochs,
                     training_running_accuracy * 100,
                     training_running_loss,
-                    static_cast<int>(training_mini_batch_idx * hyperparams::mini_batch_size + training_samples_done),
+                    training_overall_samples_done,
                     static_cast<int>(raw_training_dataset.size().value_or(0))
                 );
 
@@ -262,7 +263,9 @@ int main() {
 
                 training_amassed_loss = 0.f;
                 training_correct_pred = 0.f;
-                training_samples_done = 0.f;
+
+                training_log_counts = 0;
+                training_log_samples_done = 0.f;
 
                 // ================== VALIDATION : END ==================
             }
