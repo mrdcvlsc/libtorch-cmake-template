@@ -1,31 +1,5 @@
 #include "raw_data_writer.hpp"
 
-RawDataWriter::RawDataWriter() {
-    // Check and create "raw_data_runs" directory
-    std::filesystem::path base_dir = "raw_data_runs";
-    if (!std::filesystem::exists(base_dir)) {
-        std::filesystem::create_directory(base_dir);
-    }
-
-    // Create a timestamped folder inside "raw_data_runs"
-    auto now = std::chrono::system_clock::now();
-    auto in_time_t = std::chrono::system_clock::to_time_t(now);
-    std::tm buf;
-    std::stringstream timestamp;
-
-    // Use std::localtime for cross-platform compatibility
-    if (std::tm* t = std::localtime(&in_time_t)) {
-        buf = *t;
-        timestamp << std::put_time(&buf, "%Y_%m_%d_%H_%M");
-    } else {
-        std::cerr << "Error: Failed to retrieve time.\n";
-        return;
-    }
-
-    directory = (base_dir / timestamp.str()).string();
-    std::filesystem::create_directory(directory);
-}
-
 bool RawDataWriter::addScalar(const std::string& tag, double scalar_value, int global_step) {
     auto now = std::chrono::system_clock::now();
 
@@ -50,7 +24,7 @@ bool RawDataWriter::addScalar(const std::string& tag, double scalar_value, int g
     if (is_new_file || std::filesystem::file_size(file_path) == 0) {
         file.seekp(0);
         file.write(tag.c_str(), tag.size());
-        file.write(std::string(30, '0').c_str(), 30 - tag.size()); // Pad to 30 bytes
+        file.write(std::string(30, '0').c_str(), 30 - tag.size());
     }
 
     // Append scalar_value and global_step to file
@@ -59,7 +33,7 @@ bool RawDataWriter::addScalar(const std::string& tag, double scalar_value, int g
     file.write(reinterpret_cast<const char*>(&global_step), sizeof(global_step));
 
     // Append current time in seconds as a floating-point value
-    auto time_since_epoch_ns = now.time_since_epoch().count(); // nanoseconds
+    auto time_since_epoch_ns = now.time_since_epoch().count();
     double current_time_in_seconds = static_cast<double>(time_since_epoch_ns) / static_cast<double>(1e9);
     file.write(reinterpret_cast<const char*>(&current_time_in_seconds), sizeof(current_time_in_seconds));
 

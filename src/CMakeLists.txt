@@ -76,7 +76,9 @@ message("=====================================================")
 
 # ################# utility binaries : start #################
 
-add_library(RawDataWriter STATIC raw_data_writer.cpp)
+file(GLOB RAW_DATA_WRITER_SOURCES "raw_data_writer/*.cpp")
+
+add_library(RawDataWriter STATIC ${RAW_DATA_WRITER_SOURCES})
 set_property(TARGET RawDataWriter PROPERTY CXX_STANDARD 17)
 
 cmake_print_variables(RawDataWriter)

@@ -9,7 +9,7 @@
 #include <torch/torch.h>
 #include "hyperparameters.hpp"
 #include "model.hpp"
-#include "../raw_data_writer.hpp"
+#include "../raw_data_writer/raw_data_writer.hpp"
 
 int main() {
 
