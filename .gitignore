@@ -1,4 +1,7 @@
 data
+runs
+logs
+raw_data_runs
 *.pt
 
 src/tmp
