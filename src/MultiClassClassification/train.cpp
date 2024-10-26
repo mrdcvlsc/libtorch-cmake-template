@@ -9,8 +9,11 @@
 #include <torch/torch.h>
 #include "hyperparameters.hpp"
 #include "model.hpp"
+#include "../raw_data_writer.hpp"
 
 int main() {
+
+    RawDataWriter writer;
 
     // ================== TRAINED MODEL FILE NAMES ==================
 
@@ -146,6 +149,7 @@ int main() {
         float training_samples_done = 0.f;
 
         int training_mini_batch_idx = 0;
+        int training_log_counts = 0;
 
         for (torch::data::Example<>& training_batch : *training_dataloader) {
             
@@ -173,25 +177,30 @@ int main() {
             training_amassed_loss += training_batch_loss.item<float>();
             training_correct_pred += training_batch_output.argmax(1).eq(training_batch.target).sum().item<int>();
             training_samples_done += training_batch.data.size(0);
+            training_log_counts++;
 
             // validate the network after a certain mini batch number
 
-            if (training_mini_batch_idx % hyperparams::mini_batch_log_interval == hyperparams::mini_batch_log_interval - 1) {
+            if (training_mini_batch_idx % hyperparams::mini_batch_log_interval == 0) {
 
                 // calculate running averages of training data
 
-                auto training_running_loss = training_amassed_loss / hyperparams::mini_batch_log_interval;
+                auto training_running_loss = training_amassed_loss / static_cast<float>(training_log_counts);
                 auto training_running_accuracy = training_correct_pred / training_samples_done;
-            
+                training_log_counts = 0;
+
+                writer.addScalar("Training Loss", training_running_loss, epoch * total_training_batches + training_mini_batch_idx);
+                writer.addScalar("Training Accuracy", training_running_accuracy, epoch * total_training_batches + training_mini_batch_idx);
+
                 std::printf(
                     "Training: Batch [%d/%d] | Epoch : %d/%d | Accuracy: %.2f%% | Loss: %.7f | Dataset: [%5d/%5d]\n",
-                    training_mini_batch_idx + 1,
+                    training_mini_batch_idx,
                     total_training_batches,
-                    epoch,
+                    epoch + 1,
                     hyperparams::training_epochs,
                     training_running_accuracy * 100,
                     training_running_loss,
-                    static_cast<int>(training_samples_done),
+                    static_cast<int>(training_mini_batch_idx * hyperparams::mini_batch_size + training_samples_done),
                     static_cast<int>(raw_training_dataset.size().value_or(0))
                 );
 
@@ -223,11 +232,14 @@ int main() {
                 auto validation_ave_loss = validation_running_loss / static_cast<float>(validation_mini_batch_idx);
                 auto validation_accuracy = validation_correct_pred / validation_samples_done;
             
+                writer.addScalar("Validation Loss", validation_ave_loss, epoch * total_training_batches + training_mini_batch_idx);
+                writer.addScalar("Validation Accuracy", validation_accuracy, epoch * total_training_batches + training_mini_batch_idx);
+
                 std::printf(
                     "Validation: Batch [%d/%d] | Epoch : %d/%d | Accuracy: %.2f%% | Loss: %.7f | Dataset: [%5d/%5d]\n\n",
                     validation_mini_batch_idx,
                     total_validation_batches,
-                    epoch,
+                    epoch + 1,
                     hyperparams::training_epochs,
                     validation_accuracy * 100,
                     validation_ave_loss,
@@ -291,11 +303,14 @@ int main() {
         auto test_ave_loss = test_amassed_loss / static_cast<float>(test_mini_batch_idx);
         auto test_accuracy = test_correct_pred / test_samples_done;
     
+        writer.addScalar("Testing Loss", test_ave_loss, epoch);
+        writer.addScalar("Testing Accuracy", test_accuracy, epoch);
+
         std::printf(
             "Testing: Batch [%d/%d] | Epoch : %d/%d | Accuracy: %.2f%% | Loss: %.7f | Dataset: [%5d/%5d]\n\n",
             test_mini_batch_idx,
             total_test_batches,
-            epoch,
+            epoch + 1,
             hyperparams::training_epochs,
             test_accuracy * 100,
             test_ave_loss,
