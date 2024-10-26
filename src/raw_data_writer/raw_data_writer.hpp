@@ -7,6 +7,7 @@
 #include <chrono>
 #include <iomanip>
 #include <sstream>
+#include <map>
 #include <string>
 
 struct RawDataWriter {
@@ -14,7 +15,8 @@ struct RawDataWriter {
 
     RawDataWriter();
 
-    bool addScalar(const std::string& tag, double scalar_value, int global_step);
+    bool add_scalar(const std::string& tag, double scalar_value, int global_step);
+    bool add_scalars(const std::string& tag, const std::map<std::string, double>& scalars, int global_step);
 };
 
 #endif

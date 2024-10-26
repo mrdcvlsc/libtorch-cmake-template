@@ -1,6 +1,6 @@
 #include "raw_data_writer.hpp"
 
-bool RawDataWriter::addScalar(const std::string& tag, double scalar_value, int global_step) {
+bool RawDataWriter::add_scalar(const std::string& tag, double scalar_value, int global_step) {
 
     auto now = std::chrono::system_clock::now();
 

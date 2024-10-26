@@ -190,8 +190,8 @@ int main() {
                 auto training_running_loss = training_amassed_loss / static_cast<float>(training_log_counts);
                 auto training_running_accuracy = training_correct_pred / training_log_samples_done;
 
-                writer.addScalar("Training Loss", training_running_loss, epoch * total_training_batches + training_mini_batch_idx);
-                writer.addScalar("Training Accuracy", training_running_accuracy, epoch * total_training_batches + training_mini_batch_idx);
+                writer.add_scalar("Training Loss", training_running_loss, epoch * total_training_batches + training_mini_batch_idx);
+                writer.add_scalar("Training Accuracy", training_running_accuracy, epoch * total_training_batches + training_mini_batch_idx);
 
                 std::printf(
                     "Training: Batch [%d/%d] | Epoch : %d/%d | Accuracy: %.2f%% | Loss: %.7f | Dataset: [%5d/%5d]\n",
@@ -233,8 +233,8 @@ int main() {
                 auto validation_ave_loss = validation_running_loss / static_cast<float>(validation_mini_batch_idx);
                 auto validation_accuracy = validation_correct_pred / validation_samples_done;
             
-                writer.addScalar("Validation Loss", validation_ave_loss, epoch * total_training_batches + training_mini_batch_idx);
-                writer.addScalar("Validation Accuracy", validation_accuracy, epoch * total_training_batches + training_mini_batch_idx);
+                writer.add_scalar("Validation Loss", validation_ave_loss, epoch * total_training_batches + training_mini_batch_idx);
+                writer.add_scalar("Validation Accuracy", validation_accuracy, epoch * total_training_batches + training_mini_batch_idx);
 
                 std::printf(
                     "Validation: Batch [%d/%d] | Epoch : %d/%d | Accuracy: %.2f%% | Loss: %.7f | Dataset: [%5d/%5d]\n\n",
@@ -258,6 +258,18 @@ int main() {
 
                     std::cout << "new best VALIDATION model saved!\n\n";
                 }
+
+                // compare training and validation losses
+                writer.add_scalars("Training vs Validation Loss", {
+                    {"Training",   training_running_loss},
+                    {"Validation", validation_ave_loss}
+                }, epoch * total_training_batches + training_mini_batch_idx);
+
+                // compare training and validation accuracy
+                writer.add_scalars("Training vs Validation Accuracy", {
+                    {"Training",   training_running_accuracy},
+                    {"Validation", validation_accuracy}
+                }, epoch * total_training_batches + training_mini_batch_idx);
 
                 // zero out accumulated training data to get the next proper running averages
 
