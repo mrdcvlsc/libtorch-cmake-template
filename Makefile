@@ -9,3 +9,6 @@ release:
 serve_tensorboard:
 	python3 generate_tensorboard_data.py
 	tensorboard --logdir=runs
+
+clean:
+	rm -r *.pt raw_data_runs runs
