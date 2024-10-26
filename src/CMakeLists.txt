@@ -74,6 +74,17 @@ cmake_print_variables(TORCH_INCLUDE_DIRS)
 cmake_print_variables(CMAKE_CXX_FLAGS)
 message("=====================================================")
 
+# ################# utility binaries : start #################
+
+add_library(RawDataWriter STATIC raw_data_writer.cpp)
+set_property(TARGET RawDataWriter PROPERTY CXX_STANDARD 17)
+
+cmake_print_variables(RawDataWriter)
+message("=====================================================")
+
+
+# ################# utility binaries : end ################# 
+
 # ################# xor network : start ################# 
 
 # copy paste this block or use a foreach loop to compile multiple executable
@@ -89,6 +100,7 @@ add_executable(${OUT_EXE1} "XOR/train.cpp;XOR/model.cpp")
 # add_executable(${OUT_EXE1} main.cpp ${SOURCES})
 
 target_link_libraries(${OUT_EXE1} "${TORCH_LIBRARIES}")
+target_link_libraries(${OUT_EXE1} RawDataWriter)
 set_property(TARGET ${OUT_EXE1} PROPERTY CXX_STANDARD 17)
 
 if (MSVC)
@@ -116,6 +128,7 @@ add_executable(${OUT_EXE2} "MultiClassClassification/train.cpp;MultiClassClassif
 # add_executable(${OUT_EXE2} main.cpp ${SOURCES})
 
 target_link_libraries(${OUT_EXE2} "${TORCH_LIBRARIES}")
+target_link_libraries(${OUT_EXE2} RawDataWriter)
 set_property(TARGET ${OUT_EXE2} PROPERTY CXX_STANDARD 17)
 
 if (MSVC)
