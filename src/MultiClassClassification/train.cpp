@@ -77,6 +77,7 @@ int main() {
     // ================== GET BEST AVAILABLE COMPUTING DEVICE ==================
 
     torch::Device device(torch::kCPU);
+
     if (torch::cuda::is_available()) {
         device = torch::Device(torch::kCUDA);
     } else if (torch::mps::is_available()) {
@@ -137,12 +138,19 @@ int main() {
 
     auto start_time = std::chrono::high_resolution_clock::now();
 
+
+#if defined(VALIDATION_ENABLED)
+
     float validation_best_loss = std::numeric_limits<float>::max();
     float test_best_loss       = std::numeric_limits<float>::max();
+
+#endif
 
     for (int epoch = 0; epoch < hyperparams::training_epochs; epoch++) {
 
         // ================== TRAINING THE MODEL ==================
+
+#if defined(VALIDATION_ENABLED)
 
         float training_amassed_loss = 0.f;
         float training_correct_pred = 0.f;
@@ -151,6 +159,8 @@ int main() {
         int training_overall_samples_done = 0;
         int training_log_samples_done = 0;
         int training_log_counts = 0;
+        
+#endif
 
         for (torch::data::Example<>& training_mini_batch : *training_dataloader) {
             
@@ -283,7 +293,9 @@ int main() {
             }
 #endif
 
+#if defined(VALIDATION_ENABLED)
             training_mini_batch_idx++;
+#endif
         }
 
         // ================== TRAINING : END ==================
@@ -318,8 +330,8 @@ int main() {
         auto test_ave_loss = test_amassed_loss / static_cast<float>(test_mini_batch_idx);
         auto test_accuracy = test_correct_pred / test_samples_done;
     
-        writer.addScalar("Testing Loss", test_ave_loss, epoch);
-        writer.addScalar("Testing Accuracy", test_accuracy, epoch);
+        writer.add_scalar("Testing Loss", test_ave_loss, epoch * total_training_batches + training_mini_batch_idx);
+        writer.add_scalar("Testing Accuracy", test_accuracy, epoch * total_training_batches + training_mini_batch_idx);
 
         std::printf(
             "Testing: Batch [%d/%d] | Epoch : %d/%d | Accuracy: %.2f%% | Loss: %.7f | Dataset: [%5d/%5d]\n\n",

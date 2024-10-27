@@ -11,6 +11,6 @@ namespace hyperparams {
 };
 
 #define VALIDATION_ENABLED 1
-// #define TESTING_ENABLED 1
+#define TESTING_ENABLED 1
 
 #endif
