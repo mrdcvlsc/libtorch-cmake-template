@@ -114,23 +114,23 @@ int main() {
 
     // ================== DISPLAY SOME DATASET INFO ==================
 
-    int total_training_batches = std::distance(training_dataloader->begin(), training_dataloader->end());
+    int total_training_mini_batches = std::distance(training_dataloader->begin(), training_dataloader->end());
     std::cout << "training_dataset.size() = " << raw_training_dataset.size().value_or(0) <<'\n';
-    std::cout << "training_loader batches = " << total_training_batches <<"\n\n";
+    std::cout << "training_loader batches = " << total_training_mini_batches <<"\n\n";
 
 #if defined(VALIDATION_ENABLED)
 
-    int total_validation_batches = std::distance(validation_dataloader->begin(), validation_dataloader->end());
+    int total_validation_mini_batches = std::distance(validation_dataloader->begin(), validation_dataloader->end());
     std::cout << "validation_dataset.size() = " << raw_validation_dataset.size().value_or(0) <<'\n';
-    std::cout << "validation_loader batches = " << total_validation_batches <<"\n\n";
+    std::cout << "validation_loader batches = " << total_validation_mini_batches <<"\n\n";
 
 #endif
 
 #if defined(TESTING_ENABLED)
 
-    int total_test_batches = std::distance(test_dataloader->begin(), test_dataloader->end());
+    int total_test_mini_batches = std::distance(test_dataloader->begin(), test_dataloader->end());
     std::cout << "test_dataset.size() = " << raw_test_dataset.size().value_or(0) <<'\n';
-    std::cout << "test_loader batches = " << total_test_batches <<"\n\n";
+    std::cout << "test_loader batches = " << total_test_mini_batches <<"\n\n";
 
 #endif
 
@@ -146,7 +146,7 @@ int main() {
 
 #endif
 
-    for (int epoch = 0; epoch < hyperparams::training_epochs; epoch++) {
+    for (int epoch_idx = 0; epoch_idx < hyperparams::training_epochs; epoch_idx++) {
 
         // ================== TRAINING THE MODEL ==================
 
@@ -155,20 +155,20 @@ int main() {
         float training_amassed_loss = 0.f;
         float training_correct_pred = 0.f;
 
-        int training_mini_batch_idx = 0;
         int training_overall_samples_done = 0;
-        int training_log_samples_done = 0;
+        int training_current_log_samples_done = 0;
         int training_log_counts = 0;
+        
+        int training_mini_batch_idx = 0;
         
 #endif
 
         for (torch::data::Example<>& training_mini_batch : *training_dataloader) {
             
-            model->train();
-
             training_mini_batch.data = training_mini_batch.data.to(device);
             training_mini_batch.target = training_mini_batch.target.to(device);
 
+            model->train();
             optimizer.zero_grad();
 
             // batch.data | Shape: [Batch x Channel x 28 x 28]
@@ -188,7 +188,7 @@ int main() {
             training_amassed_loss += training_mini_batch_loss.item<float>();
             training_correct_pred += training_mini_batch_output.argmax(1).eq(training_mini_batch.target).sum().item<int>();
             training_overall_samples_done += training_mini_batch.data.size(0);
-            training_log_samples_done += training_mini_batch.data.size(0);
+            training_current_log_samples_done += training_mini_batch.data.size(0);
             training_log_counts++;
 
             // validate the network after a certain mini batch number
@@ -198,16 +198,16 @@ int main() {
                 // calculate running averages of training data
 
                 auto training_running_loss = training_amassed_loss / static_cast<float>(training_log_counts);
-                auto training_running_accuracy = training_correct_pred / training_log_samples_done;
+                auto training_running_accuracy = training_correct_pred / training_current_log_samples_done;
 
-                writer.add_scalar("Training Loss", training_running_loss, epoch * total_training_batches + training_mini_batch_idx);
-                writer.add_scalar("Training Accuracy", training_running_accuracy, epoch * total_training_batches + training_mini_batch_idx);
+                writer.add_scalar("Training Loss", training_running_loss, epoch_idx * total_training_mini_batches + training_mini_batch_idx);
+                writer.add_scalar("Training Accuracy", training_running_accuracy, epoch_idx * total_training_mini_batches + training_mini_batch_idx);
 
                 std::printf(
                     "Training: Batch [%d/%d] | Epoch : %d/%d | Accuracy: %.2f%% | Loss: %.7f | Dataset: [%5d/%5d]\n",
                     training_mini_batch_idx + 1,
-                    total_training_batches,
-                    epoch + 1,
+                    total_training_mini_batches,
+                    epoch_idx + 1,
                     hyperparams::training_epochs,
                     training_running_accuracy * 100,
                     training_running_loss,
@@ -243,14 +243,14 @@ int main() {
                 auto validation_ave_loss = validation_running_loss / static_cast<float>(validation_mini_batch_idx);
                 auto validation_accuracy = validation_correct_pred / validation_samples_done;
             
-                writer.add_scalar("Validation Loss", validation_ave_loss, epoch * total_training_batches + training_mini_batch_idx);
-                writer.add_scalar("Validation Accuracy", validation_accuracy, epoch * total_training_batches + training_mini_batch_idx);
+                writer.add_scalar("Validation Loss", validation_ave_loss, epoch_idx * total_training_mini_batches + training_mini_batch_idx);
+                writer.add_scalar("Validation Accuracy", validation_accuracy, epoch_idx * total_training_mini_batches + training_mini_batch_idx);
 
                 std::printf(
                     "Validation: Batch [%d/%d] | Epoch : %d/%d | Accuracy: %.2f%% | Loss: %.7f | Dataset: [%5d/%5d]\n\n",
                     validation_mini_batch_idx,
-                    total_validation_batches,
-                    epoch + 1,
+                    total_validation_mini_batches,
+                    epoch_idx + 1,
                     hyperparams::training_epochs,
                     validation_accuracy * 100,
                     validation_ave_loss,
@@ -273,13 +273,13 @@ int main() {
                 writer.add_scalars("Training vs Validation Loss", {
                     {"Training",   training_running_loss},
                     {"Validation", validation_ave_loss}
-                }, epoch * total_training_batches + training_mini_batch_idx);
+                }, epoch_idx * total_training_mini_batches + training_mini_batch_idx);
 
                 // compare training and validation accuracy
                 writer.add_scalars("Training vs Validation Accuracy", {
                     {"Training",   training_running_accuracy},
                     {"Validation", validation_accuracy}
-                }, epoch * total_training_batches + training_mini_batch_idx);
+                }, epoch_idx * total_training_mini_batches + training_mini_batch_idx);
 
                 // zero out accumulated training data to get the next proper running averages
 
@@ -287,7 +287,7 @@ int main() {
                 training_correct_pred = 0.f;
 
                 training_log_counts = 0;
-                training_log_samples_done = 0.f;
+                training_current_log_samples_done = 0.f;
 
                 // ================== VALIDATION : END ==================
             }
@@ -330,14 +330,14 @@ int main() {
         auto test_ave_loss = test_amassed_loss / static_cast<float>(test_mini_batch_idx);
         auto test_accuracy = test_correct_pred / test_samples_done;
     
-        writer.add_scalar("Testing Loss", test_ave_loss, epoch * total_training_batches + training_mini_batch_idx);
-        writer.add_scalar("Testing Accuracy", test_accuracy, epoch * total_training_batches + training_mini_batch_idx);
+        writer.add_scalar("Testing Loss", test_ave_loss, epoch_idx * total_training_mini_batches + training_mini_batch_idx);
+        writer.add_scalar("Testing Accuracy", test_accuracy, epoch_idx * total_training_mini_batches + training_mini_batch_idx);
 
         std::printf(
             "Testing: Batch [%d/%d] | Epoch : %d/%d | Accuracy: %.2f%% | Loss: %.7f | Dataset: [%5d/%5d]\n\n",
             test_mini_batch_idx,
-            total_test_batches,
-            epoch + 1,
+            total_test_mini_batches,
+            epoch_idx + 1,
             hyperparams::training_epochs,
             test_accuracy * 100,
             test_ave_loss,
