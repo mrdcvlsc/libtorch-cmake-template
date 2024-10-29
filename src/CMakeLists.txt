@@ -25,19 +25,19 @@ message("--------------------------")
 if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
   message("Operating System Type: LINUX")
   FetchContent_Declare(Torch
-    URL https://download.pytorch.org/libtorch/cpu/libtorch-cxx11-abi-shared-with-deps-2.2.2%2Bcpu.zip
+    URL https://download.pytorch.org/libtorch/cpu/libtorch-cxx11-abi-shared-with-deps-2.5.0%2Bcpu.zip
   )
 elseif(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
   message("Operating System Type: APPLE")
   if(${CMAKE_HOST_SYSTEM_PROCESSOR} MATCHES "x86_64")
       message(STATUS "x86_64 architecture detected")
       FetchContent_Declare(Torch
-        URL https://download.pytorch.org/libtorch/cpu/libtorch-macos-x86_64-2.2.2.zip
+        URL https://download.pytorch.org/libtorch/cpu/libtorch-macos-x86_64-2.5.0.zip
       )
   elseif(${CMAKE_HOST_SYSTEM_PROCESSOR} MATCHES "arm64")
       message(STATUS "arm64 architecture detected")
       FetchContent_Declare(Torch
-        URL https://download.pytorch.org/libtorch/cpu/libtorch-macos-arm64-2.2.2.zip
+        URL https://download.pytorch.org/libtorch/cpu/libtorch-macos-arm64-2.5.0.zip
       )
   else()
       message(FATAL_ERROR "Other architecture detected")
@@ -45,7 +45,7 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
 elseif(CMAKE_SYSTEM_NAME STREQUAL "Windows")
   message("Operating System Type: WINDOWS")
   FetchContent_Declare(Torch
-    URL https://download.pytorch.org/libtorch/cpu/libtorch-win-shared-with-deps-2.2.2%2Bcpu.zip
+    URL https://download.pytorch.org/libtorch/cpu/libtorch-win-shared-with-deps-2.5.0%2Bcpu.zip
   )
 else()
   message("Operating System Type: Unknown")
