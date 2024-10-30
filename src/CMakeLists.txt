@@ -87,59 +87,24 @@ message("=====================================================")
 
 # ################# utility binaries : end ################# 
 
-# ################# xor network : start ################# 
 
-# copy paste this block or use a foreach loop to compile multiple executable
+function(compile_binary OUT_EXE SRC_LIST)
+  add_executable(${OUT_EXE} ${SRC_LIST})
 
-# set the name of the output executable
-set(OUT_EXE1 xor_net)
+  target_link_libraries(${OUT_EXE} "${TORCH_LIBRARIES}")
+  target_link_libraries(${OUT_EXE} RawDataWriter)
+  set_property(TARGET ${OUT_EXE} PROPERTY CXX_STANDARD 17)
 
-add_executable(${OUT_EXE1} "XOR/train.cpp;XOR/model.cpp")
-
-# to add executable with dependencies
-# file(GLOB SOURCES "*.cpp")
-# cmake_print_variables(SOURCES)
-# add_executable(${OUT_EXE1} main.cpp ${SOURCES})
-
-target_link_libraries(${OUT_EXE1} "${TORCH_LIBRARIES}")
-target_link_libraries(${OUT_EXE1} RawDataWriter)
-set_property(TARGET ${OUT_EXE1} PROPERTY CXX_STANDARD 17)
-
-if (MSVC)
+  if (MSVC)
   file(GLOB TORCH_DLLS "${TORCH_INSTALL_PREFIX}/lib/*.dll")
-  add_custom_command(TARGET ${OUT_EXE1}
-                     POST_BUILD
-                     COMMAND ${CMAKE_COMMAND} -E copy_if_different
-                     ${TORCH_DLLS}
-                     $<TARGET_FILE_DIR:${OUT_EXE1}>)
-endif (MSVC)
+    add_custom_command(TARGET ${OUT_EXE}
+                        POST_BUILD
+                        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                        ${TORCH_DLLS}
+                        $<TARGET_FILE_DIR:${OUT_EXE}>)
+  endif (MSVC)
+endfunction()
 
-# ################# xor network : end ################# 
-
-################# multi-class classification : start ################# 
-
-# copy paste this block or use a foreach loop to compile multiple executable
-
-# set the name of the output executable
-set(OUT_EXE2 mcc_cnn)
-add_executable(${OUT_EXE2} "MultiClassClassification/train.cpp;MultiClassClassification/model.cpp")
-
-# to add executable with dependencies
-# file(GLOB SOURCES "*.cpp")
-# cmake_print_variables(SOURCES)
-# add_executable(${OUT_EXE2} main.cpp ${SOURCES})
-
-target_link_libraries(${OUT_EXE2} "${TORCH_LIBRARIES}")
-target_link_libraries(${OUT_EXE2} RawDataWriter)
-set_property(TARGET ${OUT_EXE2} PROPERTY CXX_STANDARD 17)
-
-if (MSVC)
-  file(GLOB TORCH_DLLS "${TORCH_INSTALL_PREFIX}/lib/*.dll")
-  add_custom_command(TARGET ${OUT_EXE2}
-                     POST_BUILD
-                     COMMAND ${CMAKE_COMMAND} -E copy_if_different
-                     ${TORCH_DLLS}
-                     $<TARGET_FILE_DIR:${OUT_EXE2}>)
-endif (MSVC)
-
-################# multi-class classification : end ################# 
+compile_binary(xor_net "XOR/train.cpp;XOR/model.cpp")
+compile_binary(mcc_cnn "MultiClassClassification/train.cpp;MultiClassClassification/model.cpp")
+compile_binary(load_example "PytorchJIT/load-example.cpp")
