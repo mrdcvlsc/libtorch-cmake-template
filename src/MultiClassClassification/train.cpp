@@ -1,3 +1,4 @@
+#include <fstream>
 #include <iostream>
 #include <cstdio>
 #include <iterator>
@@ -6,19 +7,24 @@
 #include <chrono>
 #include <signal.h>
 #include <filesystem>
+#include <torch/csrc/jit/api/compilation_unit.h>
+#include <torch/csrc/jit/serialization/export.h>
+#include <torch/csrc/jit/frontend/tracer.h>
+#include <torch/script.h>
 #include <torch/torch.h>
 #include "hyperparameters.hpp"
 #include "model.hpp"
 #include "../raw_data_writer/raw_data_writer.hpp"
+#include "torch/utils.h"
 
-int main() {
+int main(int argc, const char* argv[]) {
 
     RawDataWriter writer;
 
     // ================== TRAINED MODEL FILE NAMES ==================
 
-    std::string BEST_VALIDATION_MODEL = "best_v_model.pt";
-    std::string BEST_TESTING_MODEL    = "best_t_model.pt";
+    std::string BEST_VALIDATION_MODEL = "best_v_jit_model.pt";
+    std::string BEST_TESTING_MODEL    = "best_t_jit_model.pt";
 
     // ================== TRAINING DATASET ==================
 
@@ -90,22 +96,59 @@ int main() {
 
     // ================== LOAD CHECKPOINT IF EXIST ==================
 
-    if (std::filesystem::exists(BEST_TESTING_MODEL) || std::filesystem::exists(BEST_VALIDATION_MODEL)) {
+    torch::jit::script::Module jit_model;
+
+    if (argc == 2) {
+        try {
+            jit_model = torch::jit::load(argv[1]);
+        } catch (const c10::Error& e) {
+            std::cerr << "error loading the provided JIT model\n";
+            return -1;
+        }
+    } else if (std::filesystem::exists(BEST_TESTING_MODEL) || std::filesystem::exists(BEST_VALIDATION_MODEL)) {
         
         std::cout << "Checkpoint found, loading model...\n";
-        
-        torch::serialize::InputArchive archive;
 
-        if (std::filesystem::exists(BEST_TESTING_MODEL)) {
-            archive.load_from(BEST_TESTING_MODEL);
-        } else {
-            archive.load_from(BEST_VALIDATION_MODEL);
+        try {
+            if (std::filesystem::exists(BEST_TESTING_MODEL)) {
+                jit_model = torch::jit::load(BEST_TESTING_MODEL);
+            } else {
+                jit_model = torch::jit::load(BEST_VALIDATION_MODEL);
+            }
+        } catch (const c10::Error& e) {
+            std::cerr << "error loading the detected JIT model\n";
+            return -1;
         }
 
-        model->load(archive);
-        optimizer.load(archive);
-
         std::cout << "Checkpoint loaded successfully\n";
+
+        // ================== LOAD PARAMS & BUFFERS TO DEFINED MODEL ===================
+
+        torch::NoGradGuard no_grad;
+
+        // Copy parameters
+        for (const auto& param : jit_model.named_parameters()) {
+            auto* target_param = model->named_parameters().find(param.name);
+            if (target_param != nullptr) {
+                target_param->copy_(param.value);
+                std::cout << "Copied parameter: " << param.name << std::endl;
+            } else {
+                std::cerr << "Parameter Name Mismatch When Loading JIT model parameters to user defined model!\n";
+                return 2;
+            }
+        }
+
+        // Copy buffers
+        for (const auto& buffer : jit_model.named_buffers()) {
+            auto* target_buffer = model->named_buffers().find(buffer.name);
+            if (target_buffer != nullptr) {
+                target_buffer->copy_(buffer.value);
+                std::cout << "Copied buffer: " << buffer.name << std::endl;
+            } else {
+                std::cerr << "Parameter Name Mismatch When Loading JIT model buffers to user defined model!\n";
+                return 3;
+            }
+        }
     } else {
         std::cout << "No checkpoint found, starting training from scratch.\n";
     }
@@ -260,13 +303,50 @@ int main() {
 
                 if (validation_ave_loss < validation_best_loss) {
                     validation_best_loss = validation_ave_loss;
+                    
+                    try {
+                        // ================== LOAD PARAMS & BUFFERS TO JIT MODEL ===================
 
-                    torch::serialize::OutputArchive archive;
-                    model->save(archive);
-                    optimizer.save(archive);
-                    archive.save_to(BEST_VALIDATION_MODEL);
+                        torch::NoGradGuard no_grad;
 
-                    std::cout << "new best VALIDATION model saved!\n\n";
+                        // Copy parameters
+                        for (const auto& param : jit_model.named_parameters()) {
+                            auto* target_param = model->named_parameters().find(param.name);
+                            if (target_param != nullptr) {
+                                param.value.copy_(target_param->values().to_sparse());
+                                std::cout << "Copied Parameter: " << param.name << std::endl;
+                            } else {
+                                std::cerr << "Error: Parameter Missmatch\n";
+                                return 2;
+                            }
+                        }
+
+                        // Copy buffers
+                        for (const auto& buffer : jit_model.named_buffers()) {
+                            auto* target_buffer = model->named_buffers().find(buffer.name);
+                            if (target_buffer != nullptr) {
+                                buffer.value.copy_(target_buffer->values().to_sparse());
+                                std::cout << "Copied Buffer: " << buffer.name << std::endl;
+                            } else {
+                                std::cerr << "Error: Buffer Missmatch\n";
+                                return 3;
+                            }
+                        }
+
+                        std::ofstream save_v_model(
+                            BEST_VALIDATION_MODEL,
+                            std::ios::trunc | std::ios::out | std::ios::binary
+                        );
+
+                        torch::jit::ExportModule(jit_model, BEST_VALIDATION_MODEL);
+
+                    } catch (const c10::Error& e) {
+                        std::cerr << "ERROR saving best VALIDATION JIT model\n\n";
+                        std::cerr << "err.msg : " << e.msg() << "\n";
+                        return -1;
+                    }
+
+                    std::cout << "new best VALIDATION jit model saved!\n\n";
                 }
 
                 // compare training and validation losses
@@ -348,12 +428,50 @@ int main() {
         if (test_ave_loss < test_best_loss) {
             test_best_loss = test_ave_loss;
 
-            torch::serialize::OutputArchive archive;
-            model->save(archive);
-            optimizer.save(archive);
-            archive.save_to(BEST_TESTING_MODEL);
+            try {
+                // ================== LOAD PARAMS & BUFFERS TO JIT MODEL ===================
 
-            std::cout << "new best TESTING model saved!\n\n";
+                torch::NoGradGuard no_grad;
+
+                // Copy parameters
+                for (const auto& param : jit_model.named_parameters()) {
+                    auto* target_param = model->named_parameters().find(param.name);
+                    if (target_param != nullptr) {
+                        param.value.copy_(target_param->values().to_sparse());
+                        std::cout << "Copied Parameter: " << param.name << std::endl;
+                    } else {
+                        std::cerr << "Error: Parameter Missmatch\n";
+                        return 2;
+                    }
+                }
+
+                // Copy buffers
+                for (const auto& buffer : jit_model.named_buffers()) {
+                    auto* target_buffer = model->named_buffers().find(buffer.name);
+                    if (target_buffer != nullptr) {
+                        buffer.value.copy_(target_buffer->values().to_sparse());
+                        std::cout << "Copied Buffer: " << buffer.name << std::endl;
+                    } else {
+                        std::cerr << "Error: Buffer Missmatch\n";
+                        return 3;
+                    }
+                }
+
+                std::ofstream save_v_model(
+                    BEST_TESTING_MODEL,
+                    std::ios::trunc | std::ios::out | std::ios::binary
+                );
+
+                torch::jit::ExportModule(jit_model, BEST_TESTING_MODEL);
+
+            } catch (const c10::Error& e) {
+                std::cerr << "ERROR saving best TESTING JIT model\n\n";
+                std::cerr << "err.msg : " << e.msg() << "\n";
+                std::cerr << "err.stack : " << e.backtrace() << "\n";
+                return -1;
+            }
+
+            std::cout << "new best TESTING jit model saved!\n\n";
         }
         
 #endif
