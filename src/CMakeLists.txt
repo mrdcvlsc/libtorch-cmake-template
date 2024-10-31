@@ -87,8 +87,12 @@ message("=====================================================")
 
 # ################# utility binaries : end ################# 
 
-
 function(compile_binary OUT_EXE SRC_LIST)
+  message("------------- compile_binary() : start -------------")
+
+  cmake_print_variables(OUT_EXE)
+  cmake_print_variables(SRC_LIST)
+
   add_executable(${OUT_EXE} ${SRC_LIST})
 
   target_link_libraries(${OUT_EXE} "${TORCH_LIBRARIES}")
@@ -103,8 +107,10 @@ function(compile_binary OUT_EXE SRC_LIST)
                         ${TORCH_DLLS}
                         $<TARGET_FILE_DIR:${OUT_EXE}>)
   endif (MSVC)
+  message("------------- compile_binary() : end   -------------")
 endfunction()
 
 compile_binary(xor_net "XOR/train.cpp;XOR/model.cpp")
+compile_binary(show_params "XOR/show_params.cpp;XOR/model.cpp")
 compile_binary(mcc_cnn "MultiClassClassification/train.cpp;MultiClassClassification/model.cpp")
 compile_binary(load_example "PytorchJIT/load-example.cpp")
