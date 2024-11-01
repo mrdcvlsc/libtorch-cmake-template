@@ -3,6 +3,8 @@ runs
 logs
 raw_data_runs
 *.pt
+*.pth
+*__pycache__
 
 src/tmp
 build

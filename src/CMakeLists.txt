@@ -107,4 +107,5 @@ endfunction()
 
 compile_binary(xor_net "XOR/train.cpp;XOR/model.cpp")
 compile_binary(mcc_cnn "MultiClassClassification/train.cpp;MultiClassClassification/model.cpp")
-compile_binary(load_example "PytorchJIT/load-example.cpp")
+compile_binary(jit_mcc_cnn "MultiClassClassificationJIT/train.cpp")
+# compile_binary(load_example "PytorchJIT/load-example.cpp")
