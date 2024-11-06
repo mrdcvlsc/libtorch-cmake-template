@@ -7,14 +7,13 @@
 #include <chrono>
 #include <signal.h>
 #include <filesystem>
-#include <torch/csrc/autograd/generated/variable_factories.h>
-#include <torch/csrc/jit/api/compilation_unit.h>
-#include <torch/csrc/jit/api/module.h>
+
 #include <torch/optim/adam.h>
 #include <torch/csrc/jit/serialization/export.h>
 #include <torch/csrc/jit/frontend/tracer.h>
 #include <torch/script.h>
 #include <torch/torch.h>
+
 #include "hyperparameters.hpp"
 #include "../raw_data_writer/raw_data_writer.hpp"
 
@@ -31,10 +30,12 @@ int main(int argc, const char* argv[]) {
 
     auto raw_training_dataset = torch::data::datasets::MNIST("data/MNIST/raw", torch::data::datasets::MNIST::Mode::kTrain);
     
-    auto training_dataset = raw_training_dataset.map(torch::data::transforms::Stack<>());
+    auto training_dataset = raw_training_dataset
+        .map(torch::data::transforms::Normalize<>(0.5, 0.5))
+        .map(torch::data::transforms::Stack<>());
 
     // RandomSampler (shuffle = true) vs SequentialSampler(shuffle = false)
-    auto training_dataloader = torch::data::make_data_loader<torch::data::samplers::SequentialSampler>(
+    auto training_dataloader = torch::data::make_data_loader<torch::data::samplers::RandomSampler>(
         std::move(training_dataset),
         torch::data::DataLoaderOptions()
             .batch_size(hyperparams::mini_batch_size)
@@ -47,9 +48,11 @@ int main(int argc, const char* argv[]) {
 
     auto raw_validation_dataset = torch::data::datasets::MNIST("data/MNIST/raw", torch::data::datasets::MNIST::Mode::kTest);
     
-    auto validation_dataset = raw_validation_dataset.map(torch::data::transforms::Stack<>());
+    auto validation_dataset = raw_validation_dataset
+        .map(torch::data::transforms::Normalize<>(0.5, 0.5))
+        .map(torch::data::transforms::Stack<>());
 
-    auto validation_dataloader = torch::data::make_data_loader<torch::data::samplers::SequentialSampler>(
+    auto validation_dataloader = torch::data::make_data_loader<torch::data::samplers::RandomSampler>(
         std::move(validation_dataset),
         torch::data::DataLoaderOptions()
             .batch_size(hyperparams::mini_batch_size)
@@ -64,13 +67,15 @@ int main(int argc, const char* argv[]) {
 
     auto raw_test_dataset = torch::data::datasets::MNIST("data/MNIST/raw", torch::data::datasets::MNIST::Mode::kTest);
     
-    auto test_dataset = raw_test_dataset.map(torch::data::transforms::Normalize<>(0.5, 0.5)).map(torch::data::transforms::Stack<>());
+    auto test_dataset = raw_test_dataset
+        .map(torch::data::transforms::Normalize<>(0.5, 0.5))
+        .map(torch::data::transforms::Stack<>());
 
     auto test_dataloader = torch::data::make_data_loader<torch::data::samplers::RandomSampler>(
         std::move(test_dataset),
         torch::data::DataLoaderOptions()
             .batch_size(hyperparams::mini_batch_size)
-            .workers(2)
+            .workers(1)
     );
 
 #endif
@@ -170,7 +175,6 @@ int main(int argc, const char* argv[]) {
     // ================== START OF TRAINING EPOCHS ==================
 
     auto start_time = std::chrono::high_resolution_clock::now();
-
 
 #if defined(VALIDATION_ENABLED)
 
