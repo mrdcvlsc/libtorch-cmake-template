@@ -2,6 +2,8 @@ data
 runs
 logs
 raw_data_runs
+src/turbojpeg
+
 *.pt
 *.pth
 *__pycache__

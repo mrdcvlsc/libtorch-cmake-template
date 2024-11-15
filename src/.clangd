@@ -3,10 +3,18 @@ InlayHints:
   Enabled: Yes
   ParameterNames: No
   DeducedTypes: No
-  
+
+Index:
+  Background: Skip
+
 Diagnostics:
   UnusedIncludes: Strict
 
 CompileFlags:
-  Add: [-std=c++17, "-I/usr/local/include/torch/csrc/api/include",]
+  Add: [
+    -std=c++17,
+    "-I/usr/local/include/torch/csrc/api/include",
+    "-Ibuild/_deps/torch-src/include/torch/csrc/api/include",
+    "-I./src/turbojpeg/include",
+  ]
   Compiler: clang++
