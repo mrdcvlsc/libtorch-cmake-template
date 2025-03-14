@@ -9,20 +9,21 @@ jobs:
   build:
     permissions: write-all
 
-    name: ${{ matrix.platform.name }} ${{ matrix.config.name }}
+    name: ${{ matrix.platform.name }} ${{ matrix.platform.os }} ${{ matrix.config.name }}
     runs-on: ${{ matrix.platform.os }}
 
     strategy:
       fail-fast: false
       matrix:
         platform:
-        - { name: Windows VS2019, os: windows-2019,   binfolder: .\\build\\bin\\Release, bin: .\\build\\bin\\Release\\xor_net.exe, zip: windows-executable-VS19.zip,  zipper: 7z a -tzip }
-        - { name: Windows VS2022, os: windows-2022,   binfolder: .\\build\\bin\\Release, bin: .\\build\\bin\\Release\\xor_net.exe, zip: windows-executable-VS22.zip,  zipper: 7z a -tzip }
+        - { name: Windows VS2019, os: windows-2019,  binfolder: .\\build\\bin\\Release, bin: .\\build\\bin\\Release\\xor_net.exe, zip: windows-executable-VS19.zip,    zipper: 7z a -tzip }
+        - { name: Windows VS2022, os: windows-2022,  binfolder: .\\build\\bin\\Release, bin: .\\build\\bin\\Release\\xor_net.exe, zip: windows-executable-VS22.zip,    zipper: 7z a -tzip }
         # - { name: Windows Clang,  os: windows-latest, binfolder: .\\build\\bin\\Release, bin: .\\build\\bin\\Release\\xor_net.exe, zip: windows-executable-clang.zip, zipper: 7z a -tzip, flags: -G "Unix Makefiles" -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ }
         # - { name: Windows GCC,    os: windows-latest, binfolder: .\\build\\bin\\Release, bin: .\\build\\bin\\Release\\xor_net.exe, zip: windows-executable-gcc.zip,   zipper: 7z a -tzip, flags: -G "Unix Makefiles" -DCMAKE_C_COMPILER=gcc -DCMAKE_CXX_COMPILER=g++ }
-        # - { name: MacOS XCode,    os: macos-latest,   binfolder: ./build/bin, bin: ./build/bin/xor_net,                 zip: mac-executable.zip,           zipper: zip,       }
-        - { name: Linux GCC,      os: ubuntu-latest,  binfolder: ./build/bin, bin: ./build/bin/xor_net,                 zip: ubuntu-executable-gcc.zip,    zipper: zip -r,       }
-        - { name: Linux Clang,    os: ubuntu-latest,  binfolder: ./build/bin, bin: ./build/bin/xor_net,                 zip: ubuntu-executable-clang.zip,  zipper: zip -r,        flags: -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ }
+        - { name: MacOS XCode,    os: macos-latest,  binfolder: ./build/bin,            bin: ./build/bin/xor_net,                 zip: mac-executable.zip,             zipper: zip,       }
+        # - { name: Linux GCC,      os: ubuntu-latest,  binfolder: ./build/bin, bin: ./build/bin/xor_net,                 zip: ubuntu-executable-gcc.zip,    zipper: zip -r,       }
+        - { name: Linux Clang,    os: ubuntu-latest, binfolder: ./build/bin,            bin: ./build/bin/xor_net,                 zip: ubuntu-24-executable-clang.zip, zipper: zip -r, flags: -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ }
+        - { name: Linux Clang,    os: ubuntu-22.04,  binfolder: ./build/bin,            bin: ./build/bin/xor_net,                 zip: ubuntu-22-executable-clang.zip, zipper: zip -r, flags: -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ }
         config:
         - { name: static, flags: -DBUILD_SHARED_LIBS=FALSE }
         # - { name: shared, flags: -DBUILD_SHARED_LIBS=TRUE }
@@ -48,6 +49,14 @@ jobs:
 
     - name: Compress ${{matrix.platform.binfolder}} executable
       run: ${{matrix.platform.zipper}} ${{matrix.platform.zip}} ${{matrix.platform.binfolder}}
+
+    - name: tree (linux)
+      if: runner.os == 'Linux'
+      run: tree build
+
+    - name: tree (windows)
+      if: runner.os == 'Windows'
+      run: tree build
 
     - name: Create github release and upload ${{matrix.platform.zip}}
       continue-on-error: true
